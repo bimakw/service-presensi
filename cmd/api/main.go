@@ -64,14 +64,19 @@ func main() {
 		logger.Info("Geofencing disabled")
 	}
 
+	// Analytics repository
+	analyticsRepo := mongodb.NewAnalyticsRepository(db)
+
 	// Application layer: Use case depends on domain port (not adapter)
 	presensiUseCase := usecase.NewPresensiUseCase(presensiRepo, locationService)
 	authUseCase := usecase.NewAuthUseCase(userRepo, jwtManager)
+	analyticsUseCase := usecase.NewAnalyticsUseCase(analyticsRepo)
 
 	// Inbound adapter: HTTP handler depends on use case
 	presensiHandler := httpAdapter.NewPresensiHandler(presensiUseCase)
 	authHandler := httpAdapter.NewAuthHandler(authUseCase)
 	locationHandler := httpAdapter.NewLocationHandler(locationRepo)
+	analyticsHandler := httpAdapter.NewAnalyticsHandler(analyticsUseCase)
 
 	// Middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager)
@@ -82,6 +87,7 @@ func main() {
 		PresensiHandler:  presensiHandler,
 		AuthHandler:      authHandler,
 		LocationHandler:  locationHandler,
+		AnalyticsHandler: analyticsHandler,
 		AuthMiddleware:   authMiddleware,
 		Logger:           logger,
 		LoginRateLimiter: loginRateLimiter,

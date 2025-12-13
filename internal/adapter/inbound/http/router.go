@@ -12,6 +12,7 @@ type RouterConfig struct {
 	AuthHandler      *AuthHandler
 	AuditHandler     *AuditHandler
 	LocationHandler  *LocationHandler
+	AnalyticsHandler *AnalyticsHandler
 	AuthMiddleware   *middleware.AuthMiddleware
 	AuditMiddleware  *middleware.AuditMiddleware
 	Logger           *slog.Logger
@@ -85,6 +86,25 @@ func NewRouter(cfg RouterConfig) http.Handler {
 			cfg.AuthMiddleware.RequireRole("admin")(
 				http.HandlerFunc(cfg.AuditHandler.GetByUser),
 			),
+		))
+	}
+
+	// Analytics routes (protected)
+	if cfg.AnalyticsHandler != nil {
+		mux.Handle("GET /api/analytics/summary", cfg.AuthMiddleware.Authenticate(
+			http.HandlerFunc(cfg.AnalyticsHandler.GetSummary),
+		))
+		mux.Handle("GET /api/analytics/daily", cfg.AuthMiddleware.Authenticate(
+			http.HandlerFunc(cfg.AnalyticsHandler.GetDailySummary),
+		))
+		mux.Handle("GET /api/analytics/monthly", cfg.AuthMiddleware.Authenticate(
+			http.HandlerFunc(cfg.AnalyticsHandler.GetMonthlySummary),
+		))
+		mux.Handle("GET /api/analytics/user/{user_id}", cfg.AuthMiddleware.Authenticate(
+			http.HandlerFunc(cfg.AnalyticsHandler.GetUserSummary),
+		))
+		mux.Handle("GET /api/analytics/status-breakdown", cfg.AuthMiddleware.Authenticate(
+			http.HandlerFunc(cfg.AnalyticsHandler.GetStatusBreakdown),
 		))
 	}
 

@@ -29,6 +29,12 @@ Attendance management system built with **Clean Architecture** principles. Featu
   - Records user actions with timestamps
   - Query by entity, user, or action type
 
+- **Attendance Analytics**
+  - Daily/monthly attendance summary
+  - Per-user attendance statistics
+  - Status breakdown (hadir, terlambat, izin, sakit, alpha)
+  - Percentage calculations
+
 - **Security & Performance**
   - Global rate limiting (Token Bucket algorithm)
   - Request logging and recovery middleware
@@ -106,6 +112,15 @@ service-presensi/
 | GET | `/api/audit/{id}` | Get audit log by ID | Admin |
 | GET | `/api/audit/entity` | Get logs by entity | Admin |
 | GET | `/api/audit/user/{user_id}` | Get logs by user | Admin |
+
+### Analytics
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/analytics/summary` | Overall attendance summary | Required |
+| GET | `/api/analytics/daily?date=YYYY-MM-DD` | Daily summary | Required |
+| GET | `/api/analytics/monthly?month=YYYY-MM` | Monthly summary | Required |
+| GET | `/api/analytics/user/{user_id}` | User attendance statistics | Required |
+| GET | `/api/analytics/status-breakdown` | Status distribution | Required |
 
 ## Quick Start
 
@@ -191,6 +206,36 @@ curl -X POST http://localhost:8080/api/presensi/{id}/checkin \
     "latitude": -6.2088,
     "longitude": 106.8456
   }'
+```
+
+### Get Monthly Analytics
+```bash
+curl -X GET "http://localhost:8080/api/analytics/monthly?month=2024-01" \
+  -H "Authorization: Bearer <token>"
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Berhasil mengambil summary bulanan",
+  "data": {
+    "month": "2024-01",
+    "summary": {
+      "total_records": 150,
+      "total_hadir": 100,
+      "total_terlambat": 20,
+      "total_izin": 10,
+      "total_sakit": 15,
+      "total_alpha": 5,
+      "percentage_hadir": 80.0
+    },
+    "daily_stats": [
+      {"date": "2024-01-01", "count": 5},
+      {"date": "2024-01-02", "count": 8}
+    ]
+  }
+}
 ```
 
 ## Architecture
