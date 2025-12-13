@@ -10,7 +10,10 @@ import (
 type RouterConfig struct {
 	PresensiHandler  *PresensiHandler
 	AuthHandler      *AuthHandler
+	AuditHandler     *AuditHandler
+	LocationHandler  *LocationHandler
 	AuthMiddleware   *middleware.AuthMiddleware
+	AuditMiddleware  *middleware.AuditMiddleware
 	Logger           *slog.Logger
 	LoginRateLimiter *middleware.LoginRateLimiter
 }
@@ -61,12 +64,70 @@ func NewRouter(cfg RouterConfig) http.Handler {
 		http.HandlerFunc(cfg.PresensiHandler.CheckOut),
 	))
 
+	// Audit routes (admin only)
+	if cfg.AuditHandler != nil {
+		mux.Handle("GET /api/audit", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.AuditHandler.GetAll),
+			),
+		))
+		mux.Handle("GET /api/audit/{id}", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.AuditHandler.GetByID),
+			),
+		))
+		mux.Handle("GET /api/audit/entity", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.AuditHandler.GetByEntity),
+			),
+		))
+		mux.Handle("GET /api/audit/user/{user_id}", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.AuditHandler.GetByUser),
+			),
+		))
+	}
+
+	// Location routes (admin only) - Geofencing management
+	if cfg.LocationHandler != nil {
+		mux.Handle("POST /api/locations", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.LocationHandler.Create),
+			),
+		))
+		mux.Handle("GET /api/locations", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.LocationHandler.GetAll),
+			),
+		))
+		mux.Handle("GET /api/locations/{id}", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.LocationHandler.GetByID),
+			),
+		))
+		mux.Handle("PUT /api/locations/{id}", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.LocationHandler.Update),
+			),
+		))
+		mux.Handle("DELETE /api/locations/{id}", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.LocationHandler.Delete),
+			),
+		))
+	}
+
 	// Apply global middlewares
 	var handler http.Handler = mux
 
 	// CORS middleware
 	corsConfig := middleware.DefaultCORSConfig()
 	handler = middleware.CORS(corsConfig)(handler)
+
+	// Audit middleware (logs all write operations)
+	if cfg.AuditMiddleware != nil {
+		handler = cfg.AuditMiddleware.Audit(handler)
+	}
 
 	// Logging middleware
 	if cfg.Logger != nil {

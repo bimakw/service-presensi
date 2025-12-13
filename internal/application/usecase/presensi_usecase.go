@@ -6,6 +6,7 @@ import (
 
 	"github.com/okinn/service-presensi/internal/domain/entity"
 	"github.com/okinn/service-presensi/internal/domain/repository"
+	"github.com/okinn/service-presensi/internal/domain/service"
 	"github.com/okinn/service-presensi/internal/domain/valueobject"
 )
 
@@ -63,14 +64,25 @@ type PresensiUseCase interface {
 }
 
 type presensiUseCase struct {
-	repo repository.PresensiRepository
+	repo            repository.PresensiRepository
+	locationService *service.LocationService
 }
 
-func NewPresensiUseCase(repo repository.PresensiRepository) PresensiUseCase {
-	return &presensiUseCase{repo: repo}
+func NewPresensiUseCase(repo repository.PresensiRepository, locationService *service.LocationService) PresensiUseCase {
+	return &presensiUseCase{
+		repo:            repo,
+		locationService: locationService,
+	}
 }
 
 func (uc *presensiUseCase) Create(ctx context.Context, input CreatePresensiInput) (*PresensiOutput, error) {
+	// Validate location if geofencing is enabled
+	if uc.locationService != nil {
+		if err := uc.locationService.ValidateCheckInLocation(ctx, input.Latitude, input.Longitude); err != nil {
+			return nil, err
+		}
+	}
+
 	lokasi := valueobject.NewLokasi(input.Latitude, input.Longitude, input.Alamat)
 
 	presensi, err := entity.NewPresensi(

@@ -14,6 +14,7 @@ import (
 	"github.com/okinn/service-presensi/internal/adapter/inbound/http/middleware"
 	"github.com/okinn/service-presensi/internal/adapter/outbound/mongodb"
 	"github.com/okinn/service-presensi/internal/application/usecase"
+	"github.com/okinn/service-presensi/internal/domain/service"
 	"github.com/okinn/service-presensi/internal/infrastructure"
 	"github.com/okinn/service-presensi/pkg/jwt"
 )
@@ -52,14 +53,25 @@ func main() {
 	// Outbound adapter: MongoDB repository implements domain port
 	presensiRepo := mongodb.NewPresensiRepository(db)
 	userRepo := mongodb.NewUserRepository(db)
+	locationRepo := mongodb.NewAllowedLocationRepository(db)
+
+	// Domain service: Location service for geofencing
+	var locationService *service.LocationService
+	if cfg.GeofenceEnabled {
+		locationService = service.NewLocationService(locationRepo, cfg.GeofenceEnabled)
+		logger.Info("Geofencing enabled", slog.Float64("default_radius_meters", cfg.DefaultRadiusMeters))
+	} else {
+		logger.Info("Geofencing disabled")
+	}
 
 	// Application layer: Use case depends on domain port (not adapter)
-	presensiUseCase := usecase.NewPresensiUseCase(presensiRepo)
+	presensiUseCase := usecase.NewPresensiUseCase(presensiRepo, locationService)
 	authUseCase := usecase.NewAuthUseCase(userRepo, jwtManager)
 
 	// Inbound adapter: HTTP handler depends on use case
 	presensiHandler := httpAdapter.NewPresensiHandler(presensiUseCase)
 	authHandler := httpAdapter.NewAuthHandler(authUseCase)
+	locationHandler := httpAdapter.NewLocationHandler(locationRepo)
 
 	// Middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager)
@@ -69,6 +81,7 @@ func main() {
 	router := httpAdapter.NewRouter(httpAdapter.RouterConfig{
 		PresensiHandler:  presensiHandler,
 		AuthHandler:      authHandler,
+		LocationHandler:  locationHandler,
 		AuthMiddleware:   authMiddleware,
 		Logger:           logger,
 		LoginRateLimiter: loginRateLimiter,
