@@ -29,6 +29,11 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required"`
+	NewPassword     string `json:"new_password" validate:"required,min=6"`
+}
+
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -117,4 +122,50 @@ func (h *AuthHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Success(w, http.StatusOK, "Berhasil", output)
+}
+
+func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+	if userID == "" {
+		Error(w, http.StatusUnauthorized, "User ID tidak ditemukan")
+		return
+	}
+
+	var req ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		Error(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := validator.Validate(req); err != nil {
+		if validationErrs, ok := err.(validator.ValidationErrors); ok {
+			ValidationError(w, validationErrs)
+			return
+		}
+		Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	input := usecase.ChangePasswordInput{
+		UserID:          userID,
+		CurrentPassword: req.CurrentPassword,
+		NewPassword:     req.NewPassword,
+	}
+
+	err := h.useCase.ChangePassword(r.Context(), input)
+	if err != nil {
+		switch err {
+		case usecase.ErrInvalidOldPassword:
+			Error(w, http.StatusBadRequest, err.Error())
+		case usecase.ErrUserNotFound:
+			Error(w, http.StatusNotFound, err.Error())
+		case usecase.ErrPasswordTooShort:
+			Error(w, http.StatusBadRequest, err.Error())
+		default:
+			Error(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	Success(w, http.StatusOK, "Password berhasil diubah", nil)
 }

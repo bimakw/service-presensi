@@ -84,6 +84,14 @@ service-presensi/
 | POST | `/api/auth/register` | Register new user | - |
 | POST | `/api/auth/login` | User login | - |
 | GET | `/api/auth/profile` | Get user profile | Required |
+| POST | `/api/auth/change-password` | Change password | Required |
+
+### User Management (Admin Only)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/users` | Get all users | Admin |
+| GET | `/api/users/{id}` | Get user by ID | Admin |
+| PATCH | `/api/users/{id}/status` | Activate/Deactivate user | Admin |
 
 ### Attendance (Presensi)
 | Method | Endpoint | Description | Auth |

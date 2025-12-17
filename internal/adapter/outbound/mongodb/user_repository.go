@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/okinn/service-presensi/internal/domain/entity"
 	"github.com/okinn/service-presensi/internal/domain/repository"
@@ -67,6 +68,38 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*entity.
 	}
 
 	return toUserEntity(&doc), nil
+}
+
+func (r *UserRepository) GetAll(ctx context.Context, page, limit int) ([]*entity.User, int64, error) {
+	skip := (page - 1) * limit
+
+	opts := options.Find().
+		SetSkip(int64(skip)).
+		SetLimit(int64(limit)).
+		SetSort(bson.D{{Key: "created_at", Value: -1}})
+
+	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var docs []userDocument
+	if err := cursor.All(ctx, &docs); err != nil {
+		return nil, 0, err
+	}
+
+	total, err := r.collection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	users := make([]*entity.User, len(docs))
+	for i, doc := range docs {
+		users[i] = toUserEntity(&doc)
+	}
+
+	return users, total, nil
 }
 
 func (r *UserRepository) Update(ctx context.Context, user *entity.User) error {

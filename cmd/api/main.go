@@ -70,11 +70,13 @@ func main() {
 	// Application layer: Use case depends on domain port (not adapter)
 	presensiUseCase := usecase.NewPresensiUseCase(presensiRepo, locationService)
 	authUseCase := usecase.NewAuthUseCase(userRepo, jwtManager)
+	userUseCase := usecase.NewUserUseCase(userRepo)
 	analyticsUseCase := usecase.NewAnalyticsUseCase(analyticsRepo)
 
 	// Inbound adapter: HTTP handler depends on use case
 	presensiHandler := httpAdapter.NewPresensiHandler(presensiUseCase)
 	authHandler := httpAdapter.NewAuthHandler(authUseCase)
+	userHandler := httpAdapter.NewUserHandler(userUseCase)
 	locationHandler := httpAdapter.NewLocationHandler(locationRepo)
 	analyticsHandler := httpAdapter.NewAnalyticsHandler(analyticsUseCase)
 
@@ -86,6 +88,7 @@ func main() {
 	router := httpAdapter.NewRouter(httpAdapter.RouterConfig{
 		PresensiHandler:  presensiHandler,
 		AuthHandler:      authHandler,
+		UserHandler:      userHandler,
 		LocationHandler:  locationHandler,
 		AnalyticsHandler: analyticsHandler,
 		AuthMiddleware:   authMiddleware,

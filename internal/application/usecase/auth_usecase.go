@@ -10,10 +10,12 @@ import (
 )
 
 var (
-	ErrInvalidCredentials = errors.New("email atau password salah")
-	ErrEmailAlreadyExists = errors.New("email sudah terdaftar")
-	ErrUserNotActive      = errors.New("user tidak aktif")
-	ErrUserNotFound       = errors.New("user tidak ditemukan")
+	ErrInvalidCredentials   = errors.New("email atau password salah")
+	ErrEmailAlreadyExists   = errors.New("email sudah terdaftar")
+	ErrUserNotActive        = errors.New("user tidak aktif")
+	ErrUserNotFound         = errors.New("user tidak ditemukan")
+	ErrInvalidOldPassword   = errors.New("password lama salah")
+	ErrPasswordTooShort     = errors.New("password minimal 6 karakter")
 )
 
 type RegisterInput struct {
@@ -26,6 +28,12 @@ type RegisterInput struct {
 type LoginInput struct {
 	Email    string
 	Password string
+}
+
+type ChangePasswordInput struct {
+	UserID          string
+	CurrentPassword string
+	NewPassword     string
 }
 
 type AuthOutput struct {
@@ -45,6 +53,7 @@ type AuthUseCase interface {
 	Register(ctx context.Context, input RegisterInput) (*AuthOutput, error)
 	Login(ctx context.Context, input LoginInput) (*AuthOutput, error)
 	GetProfile(ctx context.Context, userID string) (*UserOutput, error)
+	ChangePassword(ctx context.Context, input ChangePasswordInput) error
 }
 
 type authUseCase struct {
@@ -122,6 +131,27 @@ func (uc *authUseCase) GetProfile(ctx context.Context, userID string) (*UserOutp
 	}
 
 	return toUserOutput(user), nil
+}
+
+func (uc *authUseCase) ChangePassword(ctx context.Context, input ChangePasswordInput) error {
+	user, err := uc.userRepo.GetByID(ctx, input.UserID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+
+	if !user.ComparePassword(input.CurrentPassword) {
+		return ErrInvalidOldPassword
+	}
+
+	if len(input.NewPassword) < 6 {
+		return ErrPasswordTooShort
+	}
+
+	if err := user.UpdatePassword(input.NewPassword); err != nil {
+		return err
+	}
+
+	return uc.userRepo.Update(ctx, user)
 }
 
 func toUserOutput(u *entity.User) *UserOutput {

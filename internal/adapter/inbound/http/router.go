@@ -10,6 +10,7 @@ import (
 type RouterConfig struct {
 	PresensiHandler  *PresensiHandler
 	AuthHandler      *AuthHandler
+	UserHandler      *UserHandler
 	AuditHandler     *AuditHandler
 	LocationHandler  *LocationHandler
 	AnalyticsHandler *AnalyticsHandler
@@ -39,6 +40,30 @@ func NewRouter(cfg RouterConfig) http.Handler {
 	mux.Handle("GET /api/auth/profile", cfg.AuthMiddleware.Authenticate(
 		http.HandlerFunc(cfg.AuthHandler.GetProfile),
 	))
+
+	// Change password route (protected)
+	mux.Handle("POST /api/auth/change-password", cfg.AuthMiddleware.Authenticate(
+		http.HandlerFunc(cfg.AuthHandler.ChangePassword),
+	))
+
+	// User management routes (admin only)
+	if cfg.UserHandler != nil {
+		mux.Handle("GET /api/users", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.UserHandler.GetAll),
+			),
+		))
+		mux.Handle("GET /api/users/{id}", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.UserHandler.GetByID),
+			),
+		))
+		mux.Handle("PATCH /api/users/{id}/status", cfg.AuthMiddleware.Authenticate(
+			cfg.AuthMiddleware.RequireRole("admin")(
+				http.HandlerFunc(cfg.UserHandler.UpdateStatus),
+			),
+		))
+	}
 
 	// Presensi routes (protected)
 	mux.Handle("POST /api/presensi", cfg.AuthMiddleware.Authenticate(
