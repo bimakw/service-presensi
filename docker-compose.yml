@@ -1,23 +1,49 @@
 services:
   api:
     build: .
+    container_name: service-presensi
     ports:
       - "8080:8080"
     environment:
       - MONGO_URI=mongodb://mongo:27017
       - MONGO_DATABASE=presensi_db
       - PORT=8080
+      - JWT_SECRET=${JWT_SECRET:-supersecretkey123}
+      - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-1440}
+      - GEOFENCE_ENABLED=${GEOFENCE_ENABLED:-false}
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     restart: unless-stopped
+    networks:
+      - presensi-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   mongo:
     image: mongo:7
+    container_name: presensi-mongo
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
     restart: unless-stopped
+    networks:
+      - presensi-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  presensi-network:
+    driver: bridge
 
 volumes:
   mongo_data:
