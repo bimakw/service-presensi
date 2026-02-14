@@ -14,8 +14,6 @@ func NewAnalyticsHandler(uc usecase.AnalyticsUseCase) *AnalyticsHandler {
 	return &AnalyticsHandler{useCase: uc}
 }
 
-// GetSummary returns overall attendance summary
-// GET /api/analytics/summary?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
 func (h *AnalyticsHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	startDate := query.Get("start_date")
@@ -30,8 +28,6 @@ func (h *AnalyticsHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	Success(w, http.StatusOK, "Berhasil mengambil summary", summary)
 }
 
-// GetDailySummary returns attendance summary for a specific date
-// GET /api/analytics/daily?date=YYYY-MM-DD
 func (h *AnalyticsHandler) GetDailySummary(w http.ResponseWriter, r *http.Request) {
 	date := r.URL.Query().Get("date")
 	if date == "" {
@@ -48,8 +44,6 @@ func (h *AnalyticsHandler) GetDailySummary(w http.ResponseWriter, r *http.Reques
 	Success(w, http.StatusOK, "Berhasil mengambil summary harian", summary)
 }
 
-// GetMonthlySummary returns attendance summary for a month
-// GET /api/analytics/monthly?month=YYYY-MM
 func (h *AnalyticsHandler) GetMonthlySummary(w http.ResponseWriter, r *http.Request) {
 	month := r.URL.Query().Get("month")
 	if month == "" {
@@ -66,8 +60,6 @@ func (h *AnalyticsHandler) GetMonthlySummary(w http.ResponseWriter, r *http.Requ
 	Success(w, http.StatusOK, "Berhasil mengambil summary bulanan", summary)
 }
 
-// GetUserSummary returns attendance summary for a specific user
-// GET /api/analytics/user/{user_id}?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
 func (h *AnalyticsHandler) GetUserSummary(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("user_id")
 	if userID == "" {
@@ -88,8 +80,6 @@ func (h *AnalyticsHandler) GetUserSummary(w http.ResponseWriter, r *http.Request
 	Success(w, http.StatusOK, "Berhasil mengambil summary user", summary)
 }
 
-// GetStatusBreakdown returns count per status
-// GET /api/analytics/status-breakdown?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
 func (h *AnalyticsHandler) GetStatusBreakdown(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	startDate := query.Get("start_date")

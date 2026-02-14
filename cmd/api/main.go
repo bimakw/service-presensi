@@ -20,19 +20,15 @@ import (
 )
 
 func main() {
-	// Load .env file if exists
 	_ = godotenv.Load()
 
-	// Setup structured logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
 	slog.SetDefault(logger)
 
-	// Load configuration
 	cfg := infrastructure.LoadConfig()
 
-	// Connect to MongoDB (outbound adapter)
 	mongoClient, err := infrastructure.ConnectMongo(cfg.MongoURI)
 	if err != nil {
 		logger.Error("Failed to connect to MongoDB", slog.String("error", err.Error()))
@@ -46,16 +42,12 @@ func main() {
 
 	db := mongoClient.Database(cfg.Database)
 
-	// Initialize JWT Manager
 	jwtManager := jwt.NewJWTManager(cfg.JWTSecret, time.Duration(cfg.JWTExpireMinutes)*time.Minute)
 
-	// Initialize layers (Dependency Injection)
-	// Outbound adapter: MongoDB repository implements domain port
 	presensiRepo := mongodb.NewPresensiRepository(db)
 	userRepo := mongodb.NewUserRepository(db)
 	locationRepo := mongodb.NewAllowedLocationRepository(db)
 
-	// Domain service: Location service for geofencing
 	var locationService *service.LocationService
 	if cfg.GeofenceEnabled {
 		locationService = service.NewLocationService(locationRepo, cfg.GeofenceEnabled)
@@ -64,27 +56,22 @@ func main() {
 		logger.Info("Geofencing disabled")
 	}
 
-	// Analytics repository
 	analyticsRepo := mongodb.NewAnalyticsRepository(db)
 
-	// Application layer: Use case depends on domain port (not adapter)
 	presensiUseCase := usecase.NewPresensiUseCase(presensiRepo, locationService)
 	authUseCase := usecase.NewAuthUseCase(userRepo, jwtManager)
 	userUseCase := usecase.NewUserUseCase(userRepo)
 	analyticsUseCase := usecase.NewAnalyticsUseCase(analyticsRepo)
 
-	// Inbound adapter: HTTP handler depends on use case
 	presensiHandler := httpAdapter.NewPresensiHandler(presensiUseCase)
 	authHandler := httpAdapter.NewAuthHandler(authUseCase)
 	userHandler := httpAdapter.NewUserHandler(userUseCase)
 	locationHandler := httpAdapter.NewLocationHandler(locationRepo)
 	analyticsHandler := httpAdapter.NewAnalyticsHandler(analyticsUseCase)
 
-	// Middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager)
 	loginRateLimiter := middleware.NewLoginRateLimiter()
 
-	// Setup router (inbound adapter)
 	router := httpAdapter.NewRouter(httpAdapter.RouterConfig{
 		PresensiHandler:  presensiHandler,
 		AuthHandler:      authHandler,
@@ -96,16 +83,14 @@ func main() {
 		LoginRateLimiter: loginRateLimiter,
 	})
 
-	// Create server
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  12 * time.Second,
+		WriteTimeout: 20 * time.Second,
+		IdleTimeout:  75 * time.Second,
 	}
 
-	// Start server in goroutine
 	go func() {
 		logger.Info("Server starting", slog.String("port", cfg.Port))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -114,14 +99,13 @@ func main() {
 		}
 	}()
 
-	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	logger.Info("Shutting down server...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {

@@ -27,7 +27,6 @@ func init() {
 	validate.RegisterValidation("role", validateRole)
 }
 
-// Custom validation untuk status presensi
 func validateStatusPresensi(fl validator.FieldLevel) bool {
 	status := fl.Field().String()
 	validStatuses := []string{"hadir", "terlambat", "izin", "sakit", "alpha"}
@@ -39,7 +38,6 @@ func validateStatusPresensi(fl validator.FieldLevel) bool {
 	return false
 }
 
-// Custom validation untuk role
 func validateRole(fl validator.FieldLevel) bool {
 	role := fl.Field().String()
 	if role == "" {
@@ -54,13 +52,11 @@ func validateRole(fl validator.FieldLevel) bool {
 	return false
 }
 
-// ValidationError represents a single validation error
 type ValidationError struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 }
 
-// ValidationErrors represents multiple validation errors
 type ValidationErrors []ValidationError
 
 func (v ValidationErrors) Error() string {
@@ -71,7 +67,6 @@ func (v ValidationErrors) Error() string {
 	return strings.Join(messages, "; ")
 }
 
-// Validate validates a struct and returns formatted errors
 func Validate(s interface{}) error {
 	err := validate.Struct(s)
 	if err == nil {

@@ -145,7 +145,6 @@ func (r *PresensiRepository) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-// Helper functions untuk konversi antara entity dan document
 
 func toDocument(p *entity.Presensi) *presensiDocument {
 	doc := &presensiDocument{

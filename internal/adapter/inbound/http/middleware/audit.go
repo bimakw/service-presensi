@@ -1,11 +1,3 @@
-/*
- * Copyright (c) 2024 Bima Kharisma Wicaksana
- * GitHub: https://github.com/bimakw
- *
- * Licensed under MIT License with Attribution Requirement.
- * See LICENSE file for details.
- */
-
 package middleware
 
 import (
@@ -22,7 +14,6 @@ import (
 	"github.com/okinn/service-presensi/internal/domain/repository"
 )
 
-// AuditContextKey is the context key for audit information
 type AuditContextKey string
 
 const (
@@ -31,19 +22,16 @@ const (
 	ContextKeyRequestBody AuditContextKey = "request_body"
 )
 
-// AuditMiddleware creates middleware that logs all API requests for audit trail
 type AuditMiddleware struct {
 	auditRepo repository.AuditLogRepository
 }
 
-// NewAuditMiddleware creates a new audit middleware
 func NewAuditMiddleware(auditRepo repository.AuditLogRepository) *AuditMiddleware {
 	return &AuditMiddleware{
 		auditRepo: auditRepo,
 	}
 }
 
-// auditResponseWriter wraps http.ResponseWriter to capture status code and response
 type auditResponseWriter struct {
 	http.ResponseWriter
 	statusCode   int
@@ -68,7 +56,6 @@ func (w *auditResponseWriter) Write(data []byte) (int, error) {
 	return w.ResponseWriter.Write(data)
 }
 
-// Audit returns the audit middleware handler
 func (m *AuditMiddleware) Audit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Skip audit for certain paths
@@ -127,7 +114,6 @@ func (m *AuditMiddleware) createAuditLog(
 	// Get user info from context (set by auth middleware)
 	userID, userName, userRole := getUserFromContext(r.Context())
 
-	// Create audit log
 	auditLog := entity.NewAuditLog(
 		entityType,
 		entityID,
@@ -138,7 +124,6 @@ func (m *AuditMiddleware) createAuditLog(
 		getClientIP(r),
 	)
 
-	// Set request info
 	auditLog.SetRequestInfo(
 		requestID,
 		r.UserAgent(),
@@ -146,23 +131,19 @@ func (m *AuditMiddleware) createAuditLog(
 		duration,
 	)
 
-	// Set changes (sanitize sensitive data)
 	sanitizedBody := sanitizeRequestBody(requestBody)
 	auditLog.SetChanges("", sanitizedBody, "")
 
-	// Check for errors in response
 	if w.statusCode >= 400 {
 		auditLog.SetError(extractErrorFromResponse(w.responseBody.Bytes()))
 	}
 
-	// Save to database
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	m.auditRepo.Create(ctx, auditLog)
 }
 
-// Helper functions
 
 func shouldSkipAudit(path string) bool {
 	skipPaths := []string{
@@ -177,7 +158,6 @@ func shouldSkipAudit(path string) bool {
 		}
 	}
 
-	// Only audit write operations for GET
 	return false
 }
 
@@ -188,12 +168,10 @@ func generateRequestID() string {
 func parseEntityFromPath(path string) (entityType, entityID string) {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 
-	// Expected format: /api/{entity}/{id}
 	if len(parts) < 2 {
 		return "", ""
 	}
 
-	// Skip "api" prefix
 	startIdx := 0
 	if parts[0] == "api" {
 		startIdx = 1
@@ -224,7 +202,6 @@ func determineAction(method string) entity.AuditAction {
 }
 
 func getUserFromContext(ctx context.Context) (userID, userName, userRole string) {
-	// These should be set by auth middleware
 	if id := ctx.Value("user_id"); id != nil {
 		userID = id.(string)
 	}
@@ -238,20 +215,17 @@ func getUserFromContext(ctx context.Context) (userID, userName, userRole string)
 }
 
 func getClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header (for proxies)
 	xff := r.Header.Get("X-Forwarded-For")
 	if xff != "" {
 		ips := strings.Split(xff, ",")
 		return strings.TrimSpace(ips[0])
 	}
 
-	// Check X-Real-IP header
 	xri := r.Header.Get("X-Real-IP")
 	if xri != "" {
 		return xri
 	}
 
-	// Fall back to RemoteAddr
 	ip := r.RemoteAddr
 	if colonIdx := strings.LastIndex(ip, ":"); colonIdx != -1 {
 		ip = ip[:colonIdx]
@@ -264,13 +238,11 @@ func sanitizeRequestBody(body []byte) string {
 		return ""
 	}
 
-	// Parse JSON
 	var data map[string]interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
 		return "[non-json body]"
 	}
 
-	// Remove sensitive fields
 	sensitiveFields := []string{"password", "token", "secret", "api_key", "credit_card"}
 	for _, field := range sensitiveFields {
 		if _, exists := data[field]; exists {
@@ -278,7 +250,6 @@ func sanitizeRequestBody(body []byte) string {
 		}
 	}
 
-	// Re-serialize
 	sanitized, _ := json.Marshal(data)
 	return string(sanitized)
 }

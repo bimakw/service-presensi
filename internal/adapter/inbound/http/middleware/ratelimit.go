@@ -103,13 +103,11 @@ func getIP(r *http.Request) string {
 		return forwarded
 	}
 
-	// Check X-Real-IP header
 	realIP := r.Header.Get("X-Real-IP")
 	if realIP != "" {
 		return realIP
 	}
 
-	// Fall back to RemoteAddr
 	return r.RemoteAddr
 }
 

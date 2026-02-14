@@ -1,18 +1,9 @@
-/*
- * Copyright (c) 2024 Bima Kharisma Wicaksana
- * GitHub: https://github.com/bimakw
- *
- * Licensed under MIT License with Attribution Requirement.
- * See LICENSE file for details.
- */
-
 package entity
 
 import (
 	"time"
 )
 
-// AuditAction represents the type of action performed
 type AuditAction string
 
 const (
@@ -23,7 +14,6 @@ const (
 	AuditActionLogout AuditAction = "logout"
 )
 
-// AuditLog represents an audit trail entry for tracking all data changes
 type AuditLog struct {
 	ID          string      `json:"id"`
 	EntityType  string      `json:"entity_type"`  // "presensi", "user", etc.
@@ -44,7 +34,6 @@ type AuditLog struct {
 	CreatedAt   time.Time   `json:"created_at"`
 }
 
-// NewAuditLog creates a new audit log entry
 func NewAuditLog(
 	entityType string,
 	entityID string,
@@ -66,14 +55,12 @@ func NewAuditLog(
 	}
 }
 
-// SetChanges sets the old value, new value, and computed changes
 func (a *AuditLog) SetChanges(oldValue, newValue, changes string) {
 	a.OldValue = oldValue
 	a.NewValue = newValue
 	a.Changes = changes
 }
 
-// SetRequestInfo sets request-related information
 func (a *AuditLog) SetRequestInfo(requestID, userAgent string, statusCode int, duration int64) {
 	a.RequestID = requestID
 	a.UserAgent = userAgent
@@ -81,12 +68,10 @@ func (a *AuditLog) SetRequestInfo(requestID, userAgent string, statusCode int, d
 	a.Duration = duration
 }
 
-// SetError sets error information for failed operations
 func (a *AuditLog) SetError(errMsg string) {
 	a.ErrorMsg = errMsg
 }
 
-// IsSuccessful returns true if the operation was successful
 func (a *AuditLog) IsSuccessful() bool {
 	return a.ErrorMsg == "" && a.StatusCode >= 200 && a.StatusCode < 300
 }

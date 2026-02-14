@@ -26,9 +26,9 @@ func LoadConfig() *Config {
 		MongoURI:            getEnv("MONGO_URI", "mongodb://localhost:27017"),
 		Database:            getEnv("DATABASE", "presensi_db"),
 		JWTSecret:           getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
-		JWTExpireMinutes:    getEnvAsInt("JWT_EXPIRE_MINUTES", 60*24), // 24 hours default
+		JWTExpireMinutes:    getEnvAsInt("JWT_EXPIRE_MINUTES", 60*24),
 		GeofenceEnabled:     getEnvAsBool("GEOFENCE_ENABLED", false),
-		DefaultRadiusMeters: getEnvAsFloat("DEFAULT_RADIUS_METERS", 100), // 100 meters default
+		DefaultRadiusMeters: getEnvAsFloat("DEFAULT_RADIUS_METERS", 150),
 	}
 }
 

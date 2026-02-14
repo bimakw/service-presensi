@@ -76,7 +76,6 @@ func (m *AuthMiddleware) RequireRole(roles ...string) func(http.Handler) http.Ha
 	}
 }
 
-// Helper functions untuk mendapatkan data dari context
 func GetUserID(ctx context.Context) string {
 	if userID, ok := ctx.Value(UserIDKey).(string); ok {
 		return userID

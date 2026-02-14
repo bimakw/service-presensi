@@ -1,11 +1,3 @@
-/*
- * Copyright (c) 2024 Bima Kharisma Wicaksana
- * GitHub: https://github.com/bimakw
- *
- * Licensed under MIT License with Attribution Requirement.
- * See LICENSE file for details.
- */
-
 package service
 
 import (
@@ -17,17 +9,14 @@ import (
 )
 
 const (
-	// EarthRadiusMeters is the approximate radius of Earth in meters
 	EarthRadiusMeters = 6371000
 )
 
-// LocationService handles geofencing logic
 type LocationService struct {
 	locationRepo repository.AllowedLocationRepository
 	enabled      bool
 }
 
-// NewLocationService creates a new location service
 func NewLocationService(repo repository.AllowedLocationRepository, enabled bool) *LocationService {
 	return &LocationService{
 		locationRepo: repo,
@@ -35,7 +24,6 @@ func NewLocationService(repo repository.AllowedLocationRepository, enabled bool)
 	}
 }
 
-// IsEnabled returns whether geofencing is enabled
 func (s *LocationService) IsEnabled() bool {
 	return s.enabled
 }
@@ -46,7 +34,6 @@ func (s *LocationService) ValidateCheckInLocation(ctx context.Context, lat, lon 
 		return nil // Geofencing disabled, allow all
 	}
 
-	// Skip validation if coordinates are not provided
 	if lat == 0 && lon == 0 {
 		return nil
 	}
@@ -70,7 +57,6 @@ func (s *LocationService) ValidateCheckInLocation(ctx context.Context, lat, lon 
 	return entity.ErrOutsideAllowedArea
 }
 
-// GetNearestLocation returns the nearest allowed location and distance
 func (s *LocationService) GetNearestLocation(ctx context.Context, lat, lon float64) (*entity.AllowedLocation, float64, error) {
 	locations, err := s.locationRepo.GetAllActive(ctx)
 	if err != nil {
@@ -95,16 +81,13 @@ func (s *LocationService) GetNearestLocation(ctx context.Context, lat, lon float
 	return nearest, minDistance, nil
 }
 
-// HaversineDistance calculates the distance between two coordinates in meters
 // using the Haversine formula
 func (s *LocationService) HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
-	// Convert to radians
 	lat1Rad := lat1 * math.Pi / 180
 	lat2Rad := lat2 * math.Pi / 180
 	deltaLat := (lat2 - lat1) * math.Pi / 180
 	deltaLon := (lon2 - lon1) * math.Pi / 180
 
-	// Haversine formula
 	a := math.Sin(deltaLat/2)*math.Sin(deltaLat/2) +
 		math.Cos(lat1Rad)*math.Cos(lat2Rad)*
 			math.Sin(deltaLon/2)*math.Sin(deltaLon/2)
@@ -114,7 +97,6 @@ func (s *LocationService) HaversineDistance(lat1, lon1, lat2, lon2 float64) floa
 	return EarthRadiusMeters * c
 }
 
-// IsWithinRadius checks if a point is within the radius of a location
 func (s *LocationService) IsWithinRadius(lat, lon float64, location *entity.AllowedLocation) bool {
 	distance := s.HaversineDistance(lat, lon, location.Latitude, location.Longitude)
 	return distance <= location.RadiusMeters

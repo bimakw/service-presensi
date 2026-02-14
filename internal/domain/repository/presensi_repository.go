@@ -17,7 +17,6 @@ type PresensiFilter struct {
 }
 
 // PresensiRepository adalah port untuk akses data presensi
-// Interface ini didefinisikan di domain, implementasi di adapter
 type PresensiRepository interface {
 	Create(ctx context.Context, presensi *entity.Presensi) error
 	GetByID(ctx context.Context, id string) (*entity.Presensi, error)

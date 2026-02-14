@@ -1,11 +1,3 @@
-/*
- * Copyright (c) 2024 Bima Kharisma Wicaksana
- * GitHub: https://github.com/bimakw
- *
- * Licensed under MIT License with Attribution Requirement.
- * See LICENSE file for details.
- */
-
 package entity
 
 import (
@@ -22,7 +14,6 @@ var (
 	ErrGeofencingDisabled    = errors.New("geofencing tidak aktif")
 )
 
-// AllowedLocation represents a location where check-in is permitted
 type AllowedLocation struct {
 	ID           string    `json:"id"`
 	Name         string    `json:"name"`          // e.g., "Kantor Pusat", "Cabang Jakarta"
@@ -35,7 +26,6 @@ type AllowedLocation struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// NewAllowedLocation creates a new allowed location with validation
 func NewAllowedLocation(name string, lat, lon, radiusMeters float64, address string) (*AllowedLocation, error) {
 	if name == "" {
 		return nil, ErrInvalidLocationName
@@ -62,7 +52,6 @@ func NewAllowedLocation(name string, lat, lon, radiusMeters float64, address str
 	}, nil
 }
 
-// Update updates the allowed location
 func (l *AllowedLocation) Update(name string, lat, lon, radiusMeters float64, address string, isActive bool) error {
 	if name == "" {
 		return ErrInvalidLocationName
@@ -87,13 +76,11 @@ func (l *AllowedLocation) Update(name string, lat, lon, radiusMeters float64, ad
 	return nil
 }
 
-// Deactivate deactivates the location
 func (l *AllowedLocation) Deactivate() {
 	l.IsActive = false
 	l.UpdatedAt = time.Now()
 }
 
-// Activate activates the location
 func (l *AllowedLocation) Activate() {
 	l.IsActive = true
 	l.UpdatedAt = time.Now()

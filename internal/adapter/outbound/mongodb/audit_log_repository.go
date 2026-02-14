@@ -1,11 +1,3 @@
-/*
- * Copyright (c) 2024 Bima Kharisma Wicaksana
- * GitHub: https://github.com/bimakw
- *
- * Licensed under MIT License with Attribution Requirement.
- * See LICENSE file for details.
- */
-
 package mongodb
 
 import (
@@ -47,11 +39,9 @@ type AuditLogRepository struct {
 	collection *mongo.Collection
 }
 
-// NewAuditLogRepository creates a new audit log repository
 func NewAuditLogRepository(db *mongo.Database) repository.AuditLogRepository {
 	collection := db.Collection("audit_logs")
 
-	// Create indexes for better query performance
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -209,7 +199,6 @@ func (r *AuditLogRepository) DeleteOldLogs(ctx context.Context, olderThan time.T
 	return result.DeletedCount, nil
 }
 
-// Helper functions
 
 func buildAuditLogFilter(filter repository.AuditLogFilter) bson.M {
 	bsonFilter := bson.M{}

@@ -69,7 +69,6 @@ func (uc *userUseCase) UpdateUserStatus(ctx context.Context, id string, isActive
 	return uc.userRepo.Update(ctx, user)
 }
 
-// Helper function moved from auth_usecase.go to be reusable
 func toUserOutputFromEntity(u *entity.User) *UserOutput {
 	return &UserOutput{
 		ID:       u.ID,
